@@ -1,0 +1,23 @@
+
+{
+  "name": "adventure-of-knights",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "howler": "^2.2.4",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.12",
+    "@types/three": "^0.180.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.7"
+  }
+}
