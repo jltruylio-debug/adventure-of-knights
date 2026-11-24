@@ -1,10 +1,12 @@
 
 import * as THREE from 'three';
+import { Enemy } from './Enemy';
 
 export type CombatAction = 'attack' | 'dodge' | 'skill';
 
 export class CombatSystem {
   private player: THREE.Group;
+  private enemies: Enemy[] = [];
 
   private attackCooldown = 0;
   private dodgeCooldown = 0;
@@ -81,6 +83,10 @@ export class CombatSystem {
     this.player.add(this.skillEffect);
   }
 
+  setEnemies(enemies: Enemy[]): void {
+    this.enemies = enemies;
+  }
+
   attack(): boolean {
     if (
       this.attackCooldown > 0 ||
@@ -96,9 +102,60 @@ export class CombatSystem {
     this.slashEffect.rotation.z = Math.random() * Math.PI;
     this.slashEffect.scale.setScalar(0.7);
 
+    this.damageEnemiesInFront(25, 2.6);
+
     this.onAction?.('attack');
 
     return true;
+  }
+
+  private damageEnemiesInFront(
+    damage: number,
+    range: number
+  ): void {
+    const forward = this.lastDirection.clone().normalize();
+
+    for (const enemy of this.enemies) {
+      if (!enemy.isAlive()) continue;
+
+      const direction = new THREE.Vector3(
+        enemy.group.position.x - this.player.position.x,
+        0,
+        enemy.group.position.z - this.player.position.z
+      );
+
+      const distance = direction.length();
+
+      if (distance > range || distance < 0.001) {
+        continue;
+      }
+
+      direction.normalize();
+
+      const dot = forward.dot(direction);
+
+      if (dot > 0.15) {
+        enemy.takeDamage(damage);
+      }
+    }
+  }
+
+  private damageEnemiesInArea(
+    damage: number,
+    radius: number
+  ): void {
+    for (const enemy of this.enemies) {
+      if (!enemy.isAlive()) continue;
+
+      const distance = Math.hypot(
+        enemy.group.position.x - this.player.position.x,
+        enemy.group.position.z - this.player.position.z
+      );
+
+      if (distance <= radius) {
+        enemy.takeDamage(damage);
+      }
+    }
   }
 
   dodge(): boolean {
@@ -138,6 +195,8 @@ export class CombatSystem {
 
     this.skillEffect.visible = true;
     this.skillEffect.scale.setScalar(0.2);
+
+    this.damageEnemiesInArea(40, 4.5);
 
     this.onAction?.('skill');
 
