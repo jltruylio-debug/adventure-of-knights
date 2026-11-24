@@ -1,5 +1,6 @@
 
 import * as THREE from 'three';
+import { PlayerController } from './PlayerController';
 
 export class Game {
   private container: HTMLDivElement;
@@ -8,6 +9,7 @@ export class Game {
   private renderer: THREE.WebGLRenderer;
   private clock: THREE.Clock;
   private player: THREE.Group;
+  private playerController!: PlayerController;
   private animationFrame = 0;
   private running = false;
 
@@ -50,6 +52,11 @@ export class Game {
     this.createRuins();
     this.createPlayer();
     this.createEnvironmentDetails();
+
+    this.playerController = new PlayerController(
+      this.player,
+      this.camera
+    );
 
     window.addEventListener('resize', this.handleResize);
 
@@ -155,12 +162,7 @@ export class Game {
         pathMaterial
       );
 
-      stone.position.set(
-        0,
-        -0.015,
-        -12 + i * 1.45
-      );
-
+      stone.position.set(0, -0.015, -12 + i * 1.45);
       stone.rotation.y = (Math.random() - 0.5) * 0.12;
       stone.receiveShadow = true;
 
@@ -462,12 +464,16 @@ export class Game {
 
     this.animationFrame = requestAnimationFrame(this.animate);
 
-    const elapsed = this.clock.getElapsedTime();
+    const deltaTime = Math.min(this.clock.getDelta(), 0.05);
 
-    this.player.position.y = Math.abs(Math.sin(elapsed * 2.5)) * 0.035;
+    this.playerController.update(deltaTime);
 
-    this.camera.position.x = 14 + Math.sin(elapsed * 0.12) * 0.15;
-    this.camera.lookAt(0, 0, 0);
+    const target = this.player.position.clone();
+    target.y = 0;
+
+    const cameraOffset = new THREE.Vector3(14, 18, 20);
+    this.camera.position.copy(target).add(cameraOffset);
+    this.camera.lookAt(target);
 
     this.renderer.render(this.scene, this.camera);
   };
@@ -475,6 +481,8 @@ export class Game {
   dispose(): void {
     this.running = false;
     cancelAnimationFrame(this.animationFrame);
+
+    this.playerController.dispose();
 
     window.removeEventListener('resize', this.handleResize);
 
