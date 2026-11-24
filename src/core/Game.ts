@@ -3,6 +3,7 @@ import { PlayerController } from './PlayerController';
 import { VirtualJoystick } from './VirtualJoystick';
 import { CombatSystem } from './CombatSystem';
 import { ActionButtons } from './ActionButtons';
+import { Enemy } from './Enemy';
 
 export class Game {
   private container: HTMLDivElement;
@@ -16,6 +17,8 @@ export class Game {
   private joystick!: VirtualJoystick;
   private combat!: CombatSystem;
   private actionButtons!: ActionButtons;
+
+  private enemies: Enemy[] = [];
 
   private animationFrame = 0;
   private running = false;
@@ -59,6 +62,7 @@ export class Game {
     this.createRuins();
     this.createPlayer();
     this.createEnvironmentDetails();
+    this.createEnemies();
 
     this.playerController = new PlayerController(
       this.player,
@@ -76,6 +80,8 @@ export class Game {
       this.scene,
       this.player
     );
+
+    this.combat.setEnemies(this.enemies);
 
     this.actionButtons = new ActionButtons(
       this.container,
@@ -100,6 +106,28 @@ export class Game {
     this.handleResize();
     this.running = true;
     this.animate();
+  }
+
+  private createEnemies(): void {
+    const enemyPositions = [
+      new THREE.Vector3(3, 0, 0),
+      new THREE.Vector3(-5, 0, -3),
+      new THREE.Vector3(4, 0, -9),
+      new THREE.Vector3(-9, 0, 5)
+    ];
+
+    this.enemies = enemyPositions.map((position, index) => {
+      return new Enemy(
+        this.scene,
+        position,
+        {
+          health: index === 3 ? 90 : 60,
+          speed: index === 3 ? 2.3 : 2,
+          detectionRange: 13,
+          damage: index === 3 ? 12 : 8
+        }
+      );
+    });
   }
 
   private handleCombatKeys = (event: KeyboardEvent): void => {
@@ -544,6 +572,10 @@ export class Game {
 
     this.playerController.update(deltaTime);
 
+    for (const enemy of this.enemies) {
+      enemy.update(deltaTime, this.player.position);
+    }
+
     const facingDirection = new THREE.Vector3(
       Math.sin(this.player.rotation.y),
       0,
@@ -583,6 +615,12 @@ export class Game {
     this.joystick.dispose();
     this.combat.dispose();
     this.actionButtons.dispose();
+
+    for (const enemy of this.enemies) {
+      enemy.dispose();
+    }
+
+    this.enemies = [];
 
     this.renderer.dispose();
 
