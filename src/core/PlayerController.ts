@@ -1,5 +1,6 @@
 
 import * as THREE from 'three';
+import type { JoystickInput } from './VirtualJoystick';
 
 export class PlayerController {
   private player: THREE.Group;
@@ -11,9 +12,14 @@ export class PlayerController {
   private forward = new THREE.Vector3();
   private right = new THREE.Vector3();
 
+  private joystickInput: JoystickInput = {
+    x: 0,
+    y: 0,
+    active: false
+  };
+
   private speed = 4.2;
   private sprintMultiplier = 1.65;
-
   private moving = false;
 
   constructor(player: THREE.Group, camera: THREE.Camera) {
@@ -46,33 +52,36 @@ export class PlayerController {
     this.keys.clear();
   };
 
+  setJoystickInput(input: JoystickInput): void {
+    this.joystickInput = { ...input };
+  }
+
   update(deltaTime: number): void {
-    const up =
-      this.keys.has('w') || this.keys.has('arrowup');
+    const keyboardX =
+      Number(this.keys.has('d') || this.keys.has('arrowright')) -
+      Number(this.keys.has('a') || this.keys.has('arrowleft'));
 
-    const down =
-      this.keys.has('s') || this.keys.has('arrowdown');
+    const keyboardY =
+      Number(this.keys.has('s') || this.keys.has('arrowdown')) -
+      Number(this.keys.has('w') || this.keys.has('arrowup'));
 
-    const left =
-      this.keys.has('a') || this.keys.has('arrowleft');
+    const joystickActive = this.joystickInput.active;
 
-    const right =
-      this.keys.has('d') || this.keys.has('arrowright');
+    const inputX = joystickActive
+      ? this.joystickInput.x
+      : keyboardX;
 
-    this.direction.set(0, 0, 0);
+    const inputY = joystickActive
+      ? this.joystickInput.y
+      : keyboardY;
 
-    if (up) this.direction.z -= 1;
-    if (down) this.direction.z += 1;
-    if (left) this.direction.x -= 1;
-    if (right) this.direction.x += 1;
+    this.direction.set(inputX, 0, inputY);
 
-    this.moving = this.direction.lengthSq() > 0;
+    this.moving = this.direction.lengthSq() > 0.04;
 
     if (!this.moving) {
       return;
     }
-
-    this.direction.normalize();
 
     this.forward.set(0, 0, -1);
     this.forward.applyQuaternion(this.camera.quaternion);
@@ -96,6 +105,8 @@ export class PlayerController {
       this.direction.x
     );
 
+    const intensity = Math.min(1, movement.length());
+
     movement.normalize();
 
     const sprinting = this.keys.has('shift');
@@ -106,7 +117,7 @@ export class PlayerController {
 
     this.player.position.addScaledVector(
       movement,
-      currentSpeed * deltaTime
+      currentSpeed * intensity * deltaTime
     );
 
     const targetRotation = Math.atan2(
