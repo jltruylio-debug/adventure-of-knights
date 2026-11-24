@@ -4,7 +4,6 @@ import * as THREE from 'three';
 export type CombatAction = 'attack' | 'dodge' | 'skill';
 
 export class CombatSystem {
-  private scene: THREE.Scene;
   private player: THREE.Group;
 
   private attackCooldown = 0;
@@ -24,11 +23,10 @@ export class CombatSystem {
   private onAction?: (action: CombatAction) => void;
 
   constructor(
-    scene: THREE.Scene,
+    _scene: THREE.Scene,
     player: THREE.Group,
     onAction?: (action: CombatAction) => void
   ) {
-    this.scene = scene;
     this.player = player;
     this.onAction = onAction;
 
@@ -43,7 +41,8 @@ export class CombatSystem {
     const slashMaterial = new THREE.MeshBasicMaterial({
       color: 0xffe3a0,
       transparent: true,
-      opacity: 0
+      opacity: 0,
+      depthWrite: false
     });
 
     this.slashEffect = new THREE.Mesh(
@@ -52,22 +51,23 @@ export class CombatSystem {
     );
 
     this.slashEffect.rotation.x = Math.PI / 2;
-    this.slashEffect.position.y = 1.1;
+    this.slashEffect.position.set(0, 1.1, -0.65);
     this.slashEffect.visible = false;
 
     this.player.add(this.slashEffect);
 
     const skillGeometry = new THREE.SphereGeometry(
       1,
-      12,
-      8
+      16,
+      12
     );
 
     const skillMaterial = new THREE.MeshBasicMaterial({
       color: 0x73c9ff,
       transparent: true,
       opacity: 0,
-      wireframe: true
+      wireframe: true,
+      depthWrite: false
     });
 
     this.skillEffect = new THREE.Mesh(
@@ -82,7 +82,10 @@ export class CombatSystem {
   }
 
   attack(): boolean {
-    if (this.attackCooldown > 0 || this.dodgeDuration > 0) {
+    if (
+      this.attackCooldown > 0 ||
+      this.dodgeDuration > 0
+    ) {
       return false;
     }
 
@@ -91,6 +94,7 @@ export class CombatSystem {
 
     this.slashEffect.visible = true;
     this.slashEffect.rotation.z = Math.random() * Math.PI;
+    this.slashEffect.scale.setScalar(0.7);
 
     this.onAction?.('attack');
 
@@ -98,16 +102,23 @@ export class CombatSystem {
   }
 
   dodge(): boolean {
-    if (this.dodgeCooldown > 0 || this.dodgeDuration > 0) {
+    if (
+      this.dodgeCooldown > 0 ||
+      this.dodgeDuration > 0
+    ) {
       return false;
     }
 
-    this.dodgeCooldown = 1.0;
+    this.dodgeCooldown = 1;
     this.dodgeDuration = 0.24;
 
-    this.dodgeDirection
-      .copy(this.lastDirection)
-      .normalize();
+    this.dodgeDirection.copy(this.lastDirection);
+
+    if (this.dodgeDirection.lengthSq() < 0.001) {
+      this.dodgeDirection.set(0, 0, 1);
+    }
+
+    this.dodgeDirection.normalize();
 
     this.onAction?.('dodge');
 
@@ -115,7 +126,10 @@ export class CombatSystem {
   }
 
   useSkill(): boolean {
-    if (this.skillCooldown > 0 || this.dodgeDuration > 0) {
+    if (
+      this.skillCooldown > 0 ||
+      this.dodgeDuration > 0
+    ) {
       return false;
     }
 
@@ -146,59 +160,69 @@ export class CombatSystem {
       this.skillCooldown - deltaTime
     );
 
-    if (this.attackDuration > 0) {
-      this.attackDuration -= deltaTime;
+    this.updateAttack(deltaTime);
+    this.updateDodge(deltaTime);
+    this.updateSkill(deltaTime);
+  }
 
-      const progress = 1 - Math.max(
-        0,
-        this.attackDuration / 0.22
-      );
+  private updateAttack(deltaTime: number): void {
+    if (this.attackDuration <= 0) return;
 
-      const material = this.slashEffect.material as THREE.MeshBasicMaterial;
+    this.attackDuration -= deltaTime;
 
-      material.opacity = Math.sin(progress * Math.PI) * 0.9;
+    const progress = 1 - Math.max(
+      0,
+      this.attackDuration / 0.22
+    );
 
-      this.slashEffect.scale.setScalar(
-        0.7 + progress * 0.5
-      );
+    const material = this.slashEffect.material as THREE.MeshBasicMaterial;
 
-      if (this.attackDuration <= 0) {
-        this.slashEffect.visible = false;
-        material.opacity = 0;
-      }
+    material.opacity = Math.sin(progress * Math.PI) * 0.9;
+
+    this.slashEffect.scale.setScalar(
+      0.7 + progress * 0.5
+    );
+
+    if (this.attackDuration <= 0) {
+      this.slashEffect.visible = false;
+      material.opacity = 0;
     }
+  }
 
-    if (this.dodgeDuration > 0) {
-      this.dodgeDuration -= deltaTime;
+  private updateDodge(deltaTime: number): void {
+    if (this.dodgeDuration <= 0) return;
 
-      const dodgeSpeed = 12;
+    this.dodgeDuration -= deltaTime;
 
-      this.player.position.addScaledVector(
-        this.dodgeDirection,
-        dodgeSpeed * deltaTime
-      );
-    }
+    const dodgeSpeed = 12;
 
-    if (this.skillDuration > 0) {
-      this.skillDuration -= deltaTime;
+    this.player.position.addScaledVector(
+      this.dodgeDirection,
+      dodgeSpeed * deltaTime
+    );
+  }
 
-      const progress = 1 - Math.max(
-        0,
-        this.skillDuration / 0.55
-      );
+  private updateSkill(deltaTime: number): void {
+    if (this.skillDuration <= 0) return;
 
-      const material = this.skillEffect.material as THREE.MeshBasicMaterial;
+    this.skillDuration -= deltaTime;
 
-      this.skillEffect.scale.setScalar(
-        0.2 + progress * 2.2
-      );
+    const progress = 1 - Math.max(
+      0,
+      this.skillDuration / 0.55
+    );
 
-      material.opacity = (1 - progress) * 0.8;
+    const material = this.skillEffect.material as THREE.MeshBasicMaterial;
 
-      if (this.skillDuration <= 0) {
-        this.skillEffect.visible = false;
-        material.opacity = 0;
-      }
+    this.skillEffect.scale.setScalar(
+      0.2 + progress * 2.2
+    );
+
+    material.opacity = (1 - progress) * 0.8;
+
+    if (this.skillDuration <= 0) {
+      this.skillEffect.visible = false;
+      material.opacity = 0;
     }
   }
 
