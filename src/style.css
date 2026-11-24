@@ -1,0 +1,133 @@
+
+:root {
+  font-family: Georgia, serif;
+  color: #f1e5c7;
+  background: #10100e;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --gold: #d9b66d;
+  --dark: #10100e;
+  --panel: #201b15;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#game-container {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+html {
+  background: var(--dark);
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#game-container {
+  position: relative;
+  background: #17221b;
+  isolation: isolate;
+}
+
+#game-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  outline: none;
+}
+
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background:
+    radial-gradient(ellipse at center, #30251a 0%, #17130f 55%, #080807 100%);
+  transition: opacity 0.6s ease;
+}
+
+#loading-screen h1 {
+  max-width: 90%;
+  text-align: center;
+  font-size: clamp(22px, 5vw, 52px);
+  letter-spacing: 5px;
+  color: var(--gold);
+  text-shadow: 0 3px #59401d, 0 0 25px #b8863b55;
+}
+
+#loading-screen p {
+  color: #b9a982;
+  font-size: 11px;
+  letter-spacing: 4px;
+  text-align: center;
+}
+
+.loading-bar {
+  width: min(220px, 65vw);
+  height: 5px;
+  overflow: hidden;
+  background: #453722;
+  border: 1px solid #80623a;
+}
+
+.loading-progress {
+  width: 35%;
+  height: 100%;
+  background: var(--gold);
+  animation: loading 1.5s infinite ease-in-out;
+}
+
+@keyframes loading {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(310%); }
+}
+
+#error-message {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  padding: 25px;
+  overflow: auto;
+  background: #100b0b;
+  color: #ff9584;
+  white-space: pre-wrap;
+  font-family: monospace;
+}
+
+button {
+  font: inherit;
+}
+
+@media (max-width: 600px) {
+  #loading-screen h1 {
+    letter-spacing: 2px;
+  }
+
+  #loading-screen p {
+    letter-spacing: 2px;
+    font-size: 9px;
+  }
+}
