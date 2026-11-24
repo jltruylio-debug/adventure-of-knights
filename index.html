@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#10100e" />
+  <meta name="description" content="ADVENTURE OF KNIGTHS - Uma aventura épica de fantasia medieval em 2.5D." />
+
+  <title>ADVENTURE OF KNIGTHS</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #10100e;
+      color: #f5e8c8;
+      font-family: Georgia, serif;
+      touch-action: none;
+    }
+
+    body {
+      position: relative;
+    }
+
+    #game-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #10100e;
+    }
+
+    #game-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+
+    #loading-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      background: #10100e;
+      text-align: center;
+    }
+
+    #loading-screen h1 {
+      font-size: clamp(24px, 5vw, 48px);
+      letter-spacing: 4px;
+      color: #e8c77b;
+      text-shadow: 0 3px #65451d;
+    }
+
+    #loading-screen p {
+      color: #b9a982;
+      font-size: 13px;
+      letter-spacing: 3px;
+    }
+
+    .loading-bar {
+      width: 180px;
+      height: 5px;
+      background: #383023;
+      overflow: hidden;
+    }
+
+    .loading-progress {
+      width: 35%;
+      height: 100%;
+      background: #d7ad58;
+      animation: loading 1.5s infinite ease-in-out;
+    }
+
+    @keyframes loading {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(400%); }
+    }
+
+    #error-message {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      padding: 30px;
+      background: #10100e;
+      color: #ff8b75;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <main id="game-container"></main>
+
+  <section id="loading-screen">
+    <h1>ADVENTURE OF KNIGTHS</h1>
+    <p>PREPARANDO O MUNDO DE ELDORIA</p>
+    <div class="loading-bar">
+      <div class="loading-progress"></div>
+    </div>
+  </section>
+
+  <pre id="error-message"></pre>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
