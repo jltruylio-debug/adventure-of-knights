@@ -1,7 +1,8 @@
-
 import * as THREE from 'three';
 import { PlayerController } from './PlayerController';
 import { VirtualJoystick } from './VirtualJoystick';
+import { CombatSystem } from './CombatSystem';
+import { ActionButtons } from './ActionButtons';
 
 export class Game {
   private container: HTMLDivElement;
@@ -13,6 +14,8 @@ export class Game {
   private player: THREE.Group;
   private playerController!: PlayerController;
   private joystick!: VirtualJoystick;
+  private combat!: CombatSystem;
+  private actionButtons!: ActionButtons;
 
   private animationFrame = 0;
   private running = false;
@@ -69,12 +72,56 @@ export class Game {
       }
     );
 
+    this.combat = new CombatSystem(
+      this.scene,
+      this.player
+    );
+
+    this.actionButtons = new ActionButtons(
+      this.container,
+      (action) => {
+        if (action === 'attack') {
+          this.combat.attack();
+        }
+
+        if (action === 'dodge') {
+          this.combat.dodge();
+        }
+
+        if (action === 'skill') {
+          this.combat.useSkill();
+        }
+      }
+    );
+
+    window.addEventListener('keydown', this.handleCombatKeys);
     window.addEventListener('resize', this.handleResize);
 
     this.handleResize();
     this.running = true;
     this.animate();
   }
+
+  private handleCombatKeys = (event: KeyboardEvent): void => {
+    if (event.repeat || !this.combat) return;
+
+    switch (event.key.toLowerCase()) {
+      case 'j':
+        event.preventDefault();
+        this.combat.attack();
+        break;
+
+      case 'k':
+        event.preventDefault();
+        this.combat.dodge();
+        break;
+
+      case 'l':
+        event.preventDefault();
+        this.combat.useSkill();
+        break;
+    }
+  };
 
   private setupRenderer(): void {
     this.renderer.domElement.style.width = '100%';
@@ -107,13 +154,18 @@ export class Game {
 
   private createTerrain(): void {
     const groundGeometry = new THREE.PlaneGeometry(100, 100);
+
     const groundMaterial = new THREE.MeshStandardMaterial({
       color: 0x547b43,
       roughness: 1,
       flatShading: true
     });
 
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    const ground = new THREE.Mesh(
+      groundGeometry,
+      groundMaterial
+    );
+
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.12;
     ground.receiveShadow = true;
@@ -181,7 +233,11 @@ export class Game {
     }
   }
 
-  private createTree(x: number, z: number, scale: number): void {
+  private createTree(
+    x: number,
+    z: number,
+    scale: number
+  ): void {
     const tree = new THREE.Group();
 
     const trunk = new THREE.Mesh(
@@ -271,6 +327,7 @@ export class Game {
       );
 
       rock.position.set(x, 0.25, z);
+
       rock.rotation.set(
         Math.random(),
         Math.random(),
@@ -422,7 +479,11 @@ export class Game {
   }
 
   private createEnvironmentDetails(): void {
-    const flowerColors = [0xf1d47b, 0xd98c9c, 0xe9e5c0];
+    const flowerColors = [
+      0xf1d47b,
+      0xd98c9c,
+      0xe9e5c0
+    ];
 
     for (let i = 0; i < 45; i++) {
       const flower = new THREE.Mesh(
@@ -458,6 +519,7 @@ export class Game {
     this.camera.right = viewSize * aspect;
     this.camera.top = viewSize;
     this.camera.bottom = -viewSize;
+
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(
@@ -475,14 +537,27 @@ export class Game {
 
     this.animationFrame = requestAnimationFrame(this.animate);
 
-    const deltaTime = Math.min(this.clock.getDelta(), 0.05);
+    const deltaTime = Math.min(
+      this.clock.getDelta(),
+      0.05
+    );
 
     this.playerController.update(deltaTime);
+
+    const facingDirection = new THREE.Vector3(
+      Math.sin(this.player.rotation.y),
+      0,
+      Math.cos(this.player.rotation.y)
+    );
+
+    this.combat.setMovementDirection(facingDirection);
+    this.combat.update(deltaTime);
 
     const target = this.player.position.clone();
     target.y = 0;
 
     const cameraOffset = new THREE.Vector3(14, 18, 20);
+
     this.camera.position.copy(target).add(cameraOffset);
     this.camera.lookAt(target);
 
@@ -491,15 +566,29 @@ export class Game {
 
   dispose(): void {
     this.running = false;
+
     cancelAnimationFrame(this.animationFrame);
+
+    window.removeEventListener(
+      'keydown',
+      this.handleCombatKeys
+    );
+
+    window.removeEventListener(
+      'resize',
+      this.handleResize
+    );
 
     this.playerController.dispose();
     this.joystick.dispose();
-
-    window.removeEventListener('resize', this.handleResize);
+    this.combat.dispose();
+    this.actionButtons.dispose();
 
     this.renderer.dispose();
 
-    this.container.removeChild(this.renderer.domElement);
+    this.container.removeChild(
+      this.renderer.domElement
+    );
   }
 }
+
