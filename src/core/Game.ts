@@ -1,6 +1,7 @@
 
 import * as THREE from 'three';
 import { PlayerController } from './PlayerController';
+import { VirtualJoystick } from './VirtualJoystick';
 
 export class Game {
   private container: HTMLDivElement;
@@ -8,8 +9,11 @@ export class Game {
   private camera: THREE.OrthographicCamera;
   private renderer: THREE.WebGLRenderer;
   private clock: THREE.Clock;
+
   private player: THREE.Group;
   private playerController!: PlayerController;
+  private joystick!: VirtualJoystick;
+
   private animationFrame = 0;
   private running = false;
 
@@ -56,6 +60,13 @@ export class Game {
     this.playerController = new PlayerController(
       this.player,
       this.camera
+    );
+
+    this.joystick = new VirtualJoystick(
+      this.container,
+      (input) => {
+        this.playerController.setJoystickInput(input);
+      }
     );
 
     window.addEventListener('resize', this.handleResize);
@@ -483,6 +494,7 @@ export class Game {
     cancelAnimationFrame(this.animationFrame);
 
     this.playerController.dispose();
+    this.joystick.dispose();
 
     window.removeEventListener('resize', this.handleResize);
 
